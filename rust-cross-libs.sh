@@ -88,12 +88,14 @@ N=`getconf _NPROCESSORS_ONLN 2>/dev/null || echo 1`
 RUST_VERSION=$($RUSTC --version | cut -f2 -d'(' | cut -f1 -d' ')
 cd ${RUST_GIT}
 git checkout ${RUST_VERSION} || (git fetch; git checkout ${RUST_VERSION})
-git submodule update --init src/jemalloc \
-			    src/libcompiler_builtins \
-			    src/liblibc \
-			    src/tools/rust-installer \
-			    src/tools/cargo \
-			    src/tools/rls
+git submodule update --init
+
+#src/jemalloc \
+#			    src/libcompiler_builtins \
+#			    src/liblibc \
+#			    src/tools/rust-installer \
+#			    src/tools/cargo \
+#			    src/tools/rls
 
 # Fetch compiler-rt
 (cd ${RUST_GIT}/src/libcompiler_builtins &&
