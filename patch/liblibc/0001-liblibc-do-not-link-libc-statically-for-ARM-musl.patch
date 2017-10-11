@@ -1,30 +1,26 @@
-From 52dfb5295a44f38c7dd24ed5feef35f6f46beddf Mon Sep 17 00:00:00 2001
-From: =?UTF-8?q?J=C3=B6rg=20Krause?= <joerg.krause@embedded.rocks>
-Date: Tue, 29 Nov 2016 23:51:07 +0100
-Subject: [PATCH 1/1] liblibc: do not link libc statically for ARM musl
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+From deac9815a5b9b1e437b08a98915a48c0c324abb9 Mon Sep 17 00:00:00 2001
+From: "Konstantin Kirik (snegovick)" <snegovick@uprojects.org>
+Date: Wed, 11 Oct 2017 17:07:47 +0300
+Subject: [PATCH] liblibc do not link libc statically for ARM musl
 
-Signed-off-by: Jörg Krause <joerg.krause@embedded.rocks>
 ---
  src/unix/mod.rs | 3 ++-
  1 file changed, 2 insertions(+), 1 deletion(-)
 
 diff --git a/src/unix/mod.rs b/src/unix/mod.rs
-index b79bb9f..c00325f 100644
+index f60985c4..d054f15b 100644
 --- a/src/unix/mod.rs
 +++ b/src/unix/mod.rs
-@@ -204,7 +204,8 @@ cfg_if! {
-     } else if #[cfg(all(not(stdbuild), feature = "use_std"))] {
-         // cargo build, don't pull in anything extra as the libstd  dep
+@@ -237,7 +237,8 @@ cfg_if! {
+     } else if #[cfg(feature = "use_std")] {
+         // cargo build, don't pull in anything extra as the libstd dep
          // already pulls in all libs.
 -    } else if #[cfg(any(all(target_env = "musl", not(target_arch = "mips"))))] {
 +    } else if #[cfg(any(all(target_env = "musl", not(target_arch = "mips"),
-+                                                 not(target_arch = "arm"))))] {
++                            not(target_arch = "arm"))))] {
          #[link(name = "c", kind = "static", cfg(target_feature = "crt-static"))]
          #[link(name = "c", cfg(not(target_feature = "crt-static")))]
          extern {}
 -- 
-2.10.2
+2.14.2
 
