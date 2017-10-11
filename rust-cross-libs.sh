@@ -107,8 +107,8 @@ git submodule update --init
 	git am ${TOPDIR}/patch/liblibc/*
 )
 # Patch libunwind
-(cd ${RUST_GIT}/src/libunwind &&
-	git am ${TOPDIR}/patch/libunwind/*
+(cd ${RUST_GIT} &&
+	patch -p1 < ${TOPDIR}/patch/libunwind/*
 )
 
 # Build libbacktrace

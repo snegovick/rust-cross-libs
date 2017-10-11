@@ -1,26 +1,12 @@
-From 81c2a469b0583c5d7383f23394040179b9bcd127 Mon Sep 17 00:00:00 2001
-From: "Konstantin Kirik (snegovick)" <snegovick@uprojects.org>
-Date: Wed, 11 Oct 2017 20:59:40 +0300
-Subject: [PATCH] libunwind do not link libc statically for ARM musl
-
----
- src/libunwind/lib.rs | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/src/libunwind/lib.rs b/src/libunwind/lib.rs
-index 461b49aa36..a51bc7cec8 100644
---- a/src/libunwind/lib.rs
-+++ b/src/libunwind/lib.rs
-@@ -28,8 +28,8 @@ mod libunwind;
+--- ./src/libunwind/lib.rs	2017-10-11 21:42:12.094315904 +0300
++++ ./src/libunwind/lib.rs.new	2017-10-11 21:53:47.526509159 +0300
+@@ -28,7 +28,8 @@
  #[cfg(not(target_env = "msvc"))]
  pub use libunwind::*;
  
 -#[cfg(all(target_env = "musl", not(target_arch = "mips")))]
 +#[cfg(all(target_env = "musl", not(target_arch = "mips"),
-+          not(target_arch = "arm")))]
++    not(target_arch = "arm")))]
  #[link(name = "unwind", kind = "static", cfg(target_feature = "crt-static"))]
  #[link(name = "gcc_s", cfg(not(target_feature = "crt-static")))]
  extern {}
--- 
-2.14.2
-
