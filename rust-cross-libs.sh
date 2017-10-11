@@ -2,10 +2,16 @@
 
 set -e
 
+NOPATCH=0
+
 # Parse args
 for i in "$@"
 do
-case $i in
+  case $i in
+  --nopatch)
+  NOPATCH=1
+  shift
+  ;;
 	--rust-prefix=*)
 	RUST_PREFIX=$(readlink -f "${i#*=}")
 	shift
@@ -102,14 +108,16 @@ git submodule update --init
 	git submodule update --init compiler-rt
 )
 
-# Patch libc
-(cd ${RUST_GIT}/src/liblibc &&
-	git am ${TOPDIR}/patch/liblibc/*
-)
-# Patch libunwind
-(cd ${RUST_GIT} &&
-	patch -p1 < ${TOPDIR}/patch/libunwind/*
-)
+if [ ${NOPATCH} -eq 0 ]; then
+    # Patch libc
+    (cd ${RUST_GIT}/src/liblibc &&
+	          git am ${TOPDIR}/patch/liblibc/*
+    )
+    # Patch libunwind
+    (cd ${RUST_GIT} &&
+	          patch -p1 < ${TOPDIR}/patch/libunwind/*
+    )
+fi
 
 # Build libbacktrace
 rm -rf ${BUILD}/libbacktrace
