@@ -11,13 +11,13 @@ diff --git a/src/libunwind/lib.rs b/src/libunwind/lib.rs
 index 461b49aa36..a51bc7cec8 100644
 --- a/src/libunwind/lib.rs
 +++ b/src/libunwind/lib.rs
-@@ -28,7 +28,8 @@ mod libunwind;
+@@ -28,8 +28,8 @@ mod libunwind;
  #[cfg(not(target_env = "msvc"))]
  pub use libunwind::*;
  
 -#[cfg(all(target_env = "musl", not(target_arch = "mips")))]
 +#[cfg(all(target_env = "musl", not(target_arch = "mips"),
-+          not(target_arch = "mips")))]
++          not(target_arch = "arm")))]
  #[link(name = "unwind", kind = "static", cfg(target_feature = "crt-static"))]
  #[link(name = "gcc_s", cfg(not(target_feature = "crt-static")))]
  extern {}
