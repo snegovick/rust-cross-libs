@@ -109,11 +109,12 @@ git submodule update --init
 	git submodule update --init compiler-rt
 )
 
+
+# Patch libc
+(cd ${RUST_GIT}/src/liblibc &&
+	      git am ${TOPDIR}/patch/liblibc/*
+)
 if [ ${NOPATCH} -eq 0 ]; then
-    # Patch libc
-    (cd ${RUST_GIT}/src/liblibc &&
-	          git am ${TOPDIR}/patch/liblibc/*
-    )
     # Patch libunwind
     (cd ${RUST_GIT} &&
 	          patch -p1 < ${TOPDIR}/patch/libunwind/*
