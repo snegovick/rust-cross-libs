@@ -88,7 +88,8 @@ export OPT_LEVEL=${OPT_LEVEL:-"2"}
 export PANIC_STRATEGY=${PANIC_STRATEGY:-"abort"}
 
 # Get the number of CPUs, default to 1
-N=`getconf _NPROCESSORS_ONLN 2>/dev/null || echo 1`
+N=1
+#`getconf _NPROCESSORS_ONLN 2>/dev/null || echo 1`
 
 # Make sure the Rust binary and Rust from git are the same version
 RUST_VERSION=$($RUSTC --version | cut -f2 -d'(' | cut -f1 -d' ')
