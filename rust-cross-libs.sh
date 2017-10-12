@@ -119,6 +119,11 @@ if [ ${NOPATCH} -eq 0 ]; then
     (cd ${RUST_GIT} &&
 	          patch -p1 < ${TOPDIR}/patch/libunwind/*
     )
+    # Patch libstd
+    (cd ${RUST_GIT} &&
+	          patch -p1 < ${TOPDIR}/patch/libstd/*
+    )
+
 fi
 
 # Build libbacktrace

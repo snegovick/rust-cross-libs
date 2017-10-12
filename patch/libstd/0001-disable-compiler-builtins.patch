@@ -1,0 +1,10 @@
+--- ./src/libstd/Cargo.toml	2017-10-12 05:05:32.594224468 +0300
++++ ./src/libstd/Cargo.toml.new	2017-10-12 05:06:16.477426806 +0300
+@@ -19,7 +19,6 @@
+ core = { path = "../libcore" }
+ libc = { path = "../rustc/libc_shim" }
+ rand = { path = "../librand" }
+-compiler_builtins = { path = "../rustc/compiler_builtins_shim" }
+ profiler_builtins = { path = "../libprofiler_builtins", optional = true }
+ std_unicode = { path = "../libstd_unicode" }
+ unwind = { path = "../libunwind" }
