@@ -121,7 +121,8 @@ if [ ${NOPATCH} -eq 0 ]; then
     )
     # Patch libstd
     (cd ${RUST_GIT} &&
-	          patch -p1 < ${TOPDIR}/patch/libstd/*
+	          patch -p1 < ${TOPDIR}/patch/libstd/0001-disable-compiler-builtins.patch && 
+            patch -p1 < ${TOPDIR}/patch/libstd/0002-remove-compiler-builtin-extern.patch
     )
 
 fi

@@ -1,0 +1,10 @@
+--- ./src/libstd/lib.rs	2017-10-12 05:35:09.111325150 +0300
++++ ./src/libstd/lib.rs.new	2017-10-12 05:38:28.276552187 +0300
+@@ -380,7 +380,6 @@
+ 
+ // compiler-rt intrinsics
+ #[doc(masked)]
+-extern crate compiler_builtins;
+ 
+ // During testing, this crate is not actually the "real" std library, but rather
+ // it links to the real std library, which was compiled from this same source
