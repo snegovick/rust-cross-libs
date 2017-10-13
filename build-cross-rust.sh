@@ -36,6 +36,7 @@ do
     esac
 done
 
+TOOLCHAIN_URL=${TOOLCHAIN_UCLIBC_URL}
 TOOLCHAIN_GLIBC_URL=http://toolchains.free-electrons.com/downloads/releases/toolchains/armv5-eabi/tarballs/armv5-eabi--glibc--bleeding-edge-2017.08-rc2-5-g5c1b185-1.tar.bz2
 TOOLCHAIN_MUSL_URL=http://toolchains.free-electrons.com/downloads/releases/toolchains/armv5-eabi/tarballs/armv5-eabi--musl--bleeding-edge-2017.08-rc2-5-g5c1b185-1.tar.bz2
 TOOLCHAIN_UCLIBC_URL=http://toolchains.free-electrons.com/downloads/releases/toolchains/armv5-eabi/tarballs/armv5-eabi--uclibc--bleeding-edge-2017.08-rc2-5-g5c1b185-1.tar.bz2
@@ -63,8 +64,7 @@ TARGET_JSON=${TARGET}.json
 INSTALL_PATH=${INSTALL_PREFIX}/rust-${TARGET}/
 CARGO_PREFIX=${INSTALL_PATH}cargo-armv5
 TARGET_JSON_PATH=${INSTALL_PATH}/${TARGET_JSON}
-TOOLCHAIN_URL=${TOOLCHAIN_GLIBC}
-RUST_BINARY_ARCHIVE_PATH=${INSTALL_PATH}/$(basename ${RUST_BINARY_ARCHIVE_URL})
+RUST_BINARY_ARCHIVE_PATH=${BUILD_PREFIX}/$(basename ${RUST_BINARY_ARCHIVE_URL})
 RUST_PATH=${INSTALL_PATH}/rust/
 RUST_LIB=${RUST_PATH}/lib/rustlib
 RUSTC=${RUST_PATH}/bin/rustc
@@ -74,6 +74,7 @@ PANIC_STRATEGY=${PANIC_STRATEGY:-"abort"}
 CARGO_HOME=${INSTALL_PATH}/cargo_home
 PREINITED=0
 THREADS=1
+
 
 echo "step 1 config variables"
 echo "Install path: ${INSTALL_PATH}"
@@ -113,6 +114,10 @@ else
 fi
 
 TOOLCHAIN_PATH=${INSTALL_PATH}$(tar -tf $(basename ${TOOLCHAIN_URL}) | head -1 | cut -f1 -d"/")
+LD=${TOOLCHAIN_PATH}/bin/arm-linux-ld LDFLAGS="-lgcc_eh -lgcc"
+CC=${TOOLCHAIN_PATH}/bin/arm-linux-gcc
+AR=${TOOLCHAIN_PATH}/bin/arm-linux-ar
+
 echo "step 3.2 Unpacking toolchain"
 if [ ! -e ${TOOLCHAIN_PATH} ]; then
     echo "Unpacking toolchain $(basename ${TOOLCHAIN_URL}) to ${TOOLCHAIN_PATH}"
@@ -133,7 +138,7 @@ if [ ! -e ${RUST_PATH} ]; then
     fi
     tar xf ${RUST_BINARY_ARCHIVE_PATH}
     RUST_INSTALL_PATH=${BUILD_PREFIX}/$(tar -tf ${RUST_BINARY_ARCHIVE_PATH} | head -1 | cut -f1 -d"/")
-    ${RUST_INSTALL_PATH}/install.sh --prefix=${INSTALL_PATH}/rust
+    ${RUST_INSTALL_PATH}/install.sh --prefix=${RUST_PATH}
 else
     echo "Rust binaries already installed, skip"
 fi
@@ -164,7 +169,7 @@ fi
 echo "step 6.2 Check cargo config presence"
 if [ ! -e ${CARGO_HOME}/config ]; then
     echo "Create cargo config ${CARGO_HOME}/config"
-    cat ${BUILD_PREFIX}/config | sed -e "s|linker = |linker = ${INSTALL_PATH}/armv5-sysroot|" | sed -e "s|ar = |ar = ${TOOLCHAIN_PATH}/bin/arm-linux-ar|" > ${CARGO_HOME}/config
+    cat ${BUILD_PREFIX}/config | sed -e "s|linker = |linker = \"${INSTALL_PATH}/armv5-sysroot\"|" | sed -e "s|ar = |ar = \"${TOOLCHAIN_PATH}/bin/arm-linux-ar\"|" | sed -e "s|<eabi>|${EABI}|" > ${CARGO_HOME}/config
 else
     echo "Cargo config exists, skip"
 fi
@@ -178,24 +183,6 @@ else
 fi
 popd
 
-
-function run_with_proper_env {
-    TARGET_JSON="${BUILD_PREFIX}/cfg/${TARGET.json}" \
-               TARGET=${TARGET} \
-               RUSTC=${RUSTC} \
-               CARGO=${CARGO} \
-               OPT_LEVEL=${OPT_LEVEL} \
-               CARGO_HOME=${CARGO_HOME} \
-               PATH=${RUST_PATH}/bin:$PATH \
-               LD_LIBRARY_PATH=${RUST_PATH}/lib \
-               RUST_TARGET_PATH=${BUILD_PREFIX}/cfg \
-               HOST=${HOST} \
-               LD=${TOOLCHAIN_PATH}/bin/arm-linux-ld LDFLAGS="-lgcc_eh -lgcc" \
-               CC=${TOOLCHAIN_PATH}/bin/arm-linux-gcc \
-               AR=${TOOLCHAIN_PATH}/bin/arm-linux-ar \
-               CFLAGS="-Wall -Os -fPIC -D__arm__ -mfloat-abi=soft" $1
-}
-
 echo "step 7 Build std libs"
 pushd ${BUILD_PREFIX}/rust-git
 echo "step 7.1 Init submodules"
@@ -203,7 +190,9 @@ git checkout ${RUST_VERSION} || (git fetch; git checkout ${RUST_VERSION})
 git submodule update --init
 
 echo "step 7.2 Apply patches"
+pushd ${BUILD_PREFIX}/rust-git/src/liblibc
 git am ${BUILD_PREFIX}/patch/liblibc/*
+popd
 if [ ${PREINITED} -eq 0 ]; then
     # Patch libunwind
 	  patch -p1 < ${TOPDIR}/patch/libunwind/*
@@ -216,7 +205,7 @@ echo "step 7.3 Build libbacktrace"
 rm -rf ${BUILD_PREFIX}/build/libbacktrace
 mkdir -p ${BUILD_PREFIX}/build/libbacktrace
 pushd ${BUILD_PREFIX}/build/libbacktrace
-CC="${CC}" AR="${AR}" RANLIB="${AR} s" CFLAGS="${CFLAGS} -fno-stack-protector" ${BUILD_PREFIX}rust-git/src/libbacktrace/configure  --build=${TARGET} --host=${HOST}
+CC="${CC}" AR="${AR}" RANLIB="${AR} s" CFLAGS="${CFLAGS} -fno-stack-protector" ${BUILD_PREFIX}/rust-git/src/libbacktrace/configure  --build=${TARGET} --host=${HOST}
 make -j${THREADS} INCDIR=${BUILD_PREFIX}/rust-git/src/libbacktrace
 
 mv ${BUILD_PREFIX}/build/libbacktrace/.libs/libbacktrace.a ${BUILD_PREFIX}/build
@@ -228,11 +217,30 @@ FEATURES="jemalloc"
 if [ "${PANIC_STRATEGY}" = "unwind" ]; then
 	  FEATURES="jemalloc backtrace panic_unwind"
 fi
+
+function run_with_proper_env {
+    FEATURES=${FEATURES} \
+            TARGET_JSON="${BUILD_PREFIX}/cfg/${TARGET}.json" \
+            TARGET=${TARGET} \
+            RUSTC=${RUSTC} \
+            CARGO=${CARGO} \
+            OPT_LEVEL=${OPT_LEVEL} \
+            CARGO_HOME=${CARGO_HOME} \
+            PATH=${RUST_PATH}/bin:$PATH \
+            LD_LIBRARY_PATH=${RUST_PATH}/lib \
+            RUST_TARGET_PATH=${BUILD_PREFIX}/cfg \
+            HOST=${HOST} \
+            LD=${LD} \
+            CC=${CC} \
+            AR=${AR} \
+            CFLAGS="-Wall -Os -fPIC -D__arm__ -mfloat-abi=soft" $1
+}
+
 echo "Features: ${FEATURES}"
 echo "step 8.1 Building libstd"
 pushd ${BUILD_PREFIX}/rust-git/src/libstd
 run_with_proper_env "${CARGO} clean"
-run_with_proper_env "${CARGO} build -j${THREADS} --target=${TARGET} --release --features \"${FEATURES}\""
+run_with_proper_env "${CARGO} build -j${THREADS} --target=${TARGET} --release --features ${FEATURES}"
 
 
 # echo "step 7 Build std libs"
