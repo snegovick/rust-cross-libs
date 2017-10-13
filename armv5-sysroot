@@ -1,0 +1,5 @@
+#!/bin/bash
+
+SYSROOT=
+<gcc> --sysroot=$SYSROOT $(echo "$@" | sed 's/-L \/usr\/lib //g') -lgcc_eh -lgcc
+
