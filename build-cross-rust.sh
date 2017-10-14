@@ -82,7 +82,7 @@ echo "Build prefix: ${BUILD_PREFIX}"
 echo "Target EABI: ${EABI}"
 echo "Host triplet: ${HOST}"
 
-echo "step 2 current state to avoid double work"
+echo "step 2 Check current state to avoid double work"
 
 echo "step 2.1 Check install path ${INSTALL_PATH}"
 if [ ! -e ${INSTALL_PATH} ]; then
@@ -205,15 +205,20 @@ if [ ${PREINITED} -eq 0 ]; then
     patch -p1 < ${BUILD_PREFIX}/patch/libstd/0002-remove-compiler-builtin-extern.patch
 fi
 
-echo "step 7.3 Build libbacktrace"
-rm -rf ${BUILD_PREFIX}/build/libbacktrace
-mkdir -p ${BUILD_PREFIX}/build/libbacktrace
-pushd ${BUILD_PREFIX}/build/libbacktrace
-CC="${CC}" AR="${AR}" RANLIB="${AR} s" CFLAGS="${CFLAGS} -fno-stack-protector" ${BUILD_PREFIX}/rust-git/src/libbacktrace/configure  --build=${TARGET} --host=${HOST}
-make -j${THREADS} INCDIR=${BUILD_PREFIX}/rust-git/src/libbacktrace
+echo "step 7.3 Check libbacktrace presence"
+if [ -e ${BUILD_PREFIX}/build/libbacktrace.a ]; then
+    echo "libbacktrace already here, skip building it"
+else
+    rm -rf ${BUILD_PREFIX}/build/libbacktrace
+    mkdir -p ${BUILD_PREFIX}/build/libbacktrace
+    pushd ${BUILD_PREFIX}/build/libbacktrace
+    CC="${CC}" AR="${AR}" RANLIB="${AR} s" CFLAGS="${CFLAGS} -fno-stack-protector" ${BUILD_PREFIX}/rust-git/src/libbacktrace/configure  --build=${TARGET} --host=${HOST}
+    make -j${THREADS} INCDIR=${BUILD_PREFIX}/rust-git/src/libbacktrace
+    
+    mv ${BUILD_PREFIX}/build/libbacktrace/.libs/libbacktrace.a ${BUILD_PREFIX}/build
+    popd    
+fi
 
-mv ${BUILD_PREFIX}/build/libbacktrace/.libs/libbacktrace.a ${BUILD_PREFIX}/build
-popd
 
 echo "step 8 Build libstd"
 
