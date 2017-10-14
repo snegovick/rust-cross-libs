@@ -273,25 +273,3 @@ TOOLCHAIN_PATH=${TOOLCHAIN_PATH}
 CARGO_HOME=${CARGO_HOME} PATH=\${HERE}/rust/bin:\$PATH LD_LIBRARY_PATH=\${HERE}/rust/lib RUST_TARGET_PATH=\${HERE} HOST=${HOST} TARGET=${TARGET} LD=\${TOOLCHAIN_PATH}/bin/arm-linux-ld CC=\${TOOLCHAIN_PATH}/bin/arm-linux-gcc AR=\${TOOLCHAIN_PATH}/bin/arm-linux-ar ${CARGO} \$* \${APPENDIX}
 EOF
 chmod +x ${INSTALL_PATH}/cargo-${TARGET}
-
-
-# echo "step 7 Build std libs"
-# pushd ${BUILD_PREFIX}
-# if [ ${PREINITED} -eq 0 ]; then
-#     PATH=${RUST_PATH}/bin:$PATH LD_LIBRARY_PATH=${RUST_PATH}/lib RUST_TARGET_PATH=${BUILD_PREFIX}/cfg HOST=${HOST} TARGET=${TARGET} LD=${TOOLCHAIN_PATH}/bin/arm-linux-ld LDFLAGS="-lgcc_eh -lgcc" CC=${TOOLCHAIN_PATH}/bin/arm-linux-gcc AR=${TOOLCHAIN_PATH}/bin/arm-linux-ar CFLAGS="-Wall -Os -fPIC -D__arm__ -mfloat-abi=soft" ./rust-cross-libs.sh --cargo-home=${CARGO_HOME} --rust-prefix=${RUST_PATH} --rust-git=${BUILD_PREFIX}/rust-git --target=${BUILD_PREFIX}/cfg/${TARGET}.json
-# else
-#     PATH=${RUST_PATH}/bin:$PATH LD_LIBRARY_PATH=${RUST_PATH}/lib RUST_TARGET_PATH=${BUILD_PREFIX}/cfg HOST=${HOST} TARGET=${TARGET} LD=${TOOLCHAIN_PATH}/bin/arm-linux-ld LDFLAGS="-lgcc_eh -lgcc" CC=${TOOLCHAIN_PATH}/bin/arm-linux-gcc AR=${TOOLCHAIN_PATH}/bin/arm-linux-ar CFLAGS="-Wall -Os -fPIC -D__arm__ -mfloat-abi=soft" ./rust-cross-libs.sh --cargo-home=${CARGO_HOME} --rust-prefix=${RUST_PATH} --rust-git=${BUILD_PREFIX}/rust-git --target=${BUILD_PREFIX}/cfg/${TARGET}.json --nopatch
-# fi
-# popd
-
-# else
-#     pushd rust-cross-libs
-#     HERE=${PWD}
-#     if [ ! -e hello ]; then
-#         PATH=$PWD/rust/bin:$PATH LD_LIBRARY_PATH=$PWD/rust/lib RUST_TARGET_PATH=$PWD/cfg HOST=x86_64-linux-gnu TARGET=${TARGET} LD=${PREFIX}/arm-linux-ld  CC=${PREFIX}/arm-linux-gcc AR=${PREFIX}/arm-linux-ar CFLAGS="-Wall -Os -fPIC -D__arm__ -mfloat-abi=soft" cargo new --bin hello
-#     fi
-#     pushd hello
-#     PATH=$HERE/rust/bin:$PATH LD_LIBRARY_PATH=$HERE/rust/lib RUST_TARGET_PATH=$HERE/cfg HOST=x86_64-linux-gnu TARGET=${TARGET} LD=${PREFIX}/arm-linux-ld CC=${PREFIX}/arm-linux-gcc AR=${PREFIX}/arm-linux-ar cargo build --target=${TARGET} --release --verbose
-#     popd
-#     popd
-# fi
