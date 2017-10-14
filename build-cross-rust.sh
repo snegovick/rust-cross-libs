@@ -73,7 +73,7 @@ OPT_LEVEL=${OPT_LEVEL:-"2"}
 PANIC_STRATEGY=${PANIC_STRATEGY:-"abort"}
 CARGO_HOME=${INSTALL_PATH}/cargo_home
 PREINITED=0
-THREADS=1
+THREADS=$(nproc)
 
 
 echo "step 1 config variables"
@@ -104,7 +104,7 @@ if [ ${CLEAN} -eq 1 ]; then
 fi
 
 echo "step 3 Install cross-toolchain ${TOOLCHAIN_URL}"
-pushd ${INSTALL_PATH}
+pushd ${BUILD_PREFIX}
 echo "step 3.1 Checking toolchain archive presence"
 if [ ! -e $(basename ${TOOLCHAIN_URL}) ]; then
     echo "Downloading cross-toolchain archive ${TOOLCHAIN_URL}"
@@ -117,15 +117,18 @@ TOOLCHAIN_PATH=${INSTALL_PATH}$(tar -tf $(basename ${TOOLCHAIN_URL}) | head -1 |
 LD=${TOOLCHAIN_PATH}/bin/arm-linux-ld LDFLAGS="-lgcc_eh -lgcc"
 CC=${TOOLCHAIN_PATH}/bin/arm-linux-gcc
 AR=${TOOLCHAIN_PATH}/bin/arm-linux-ar
+popd
 
 echo "step 3.2 Unpacking toolchain"
+pushd ${INSTALL_PATH}
 if [ ! -e ${TOOLCHAIN_PATH} ]; then
-    echo "Unpacking toolchain $(basename ${TOOLCHAIN_URL}) to ${TOOLCHAIN_PATH}"
-    tar xf $(basename ${TOOLCHAIN_URL})
+    echo "Unpacking toolchain ${BUILD_PREFIX}/$(basename ${TOOLCHAIN_URL}) to ${TOOLCHAIN_PATH}"
+    tar xf ${BUILD_PREFIX}/$(basename ${TOOLCHAIN_URL})
 else
     echo "Toolchain already unpacked"
 fi
 popd
+
 
 echo "step 4 Install rust binaries"
 pushd ${BUILD_PREFIX}
@@ -178,6 +181,7 @@ echo "step 6.3 Check sysroot linker script presence"
 if [ ! -e ${INSTALL_PATH}/armv5-sysroot ]; then
     echo "Create sysroot linker script"
     cat ${BUILD_PREFIX}/armv5-sysroot | sed -e "s|SYSROOT=|SYSROOT=${TOOLCHAIN_PATH}/arm-buildroot-linux-${EABI}/sysroot|" | sed -e "s|<gcc>|${TOOLCHAIN_PATH}/bin/arm-linux-gcc|" > ${INSTALL_PATH}/armv5-sysroot
+    chmod +x ${INSTALL_PATH}/armv5-sysroot
 else
     echo "Sysroot linker script exists, skip"
 fi
@@ -195,10 +199,10 @@ git am ${BUILD_PREFIX}/patch/liblibc/*
 popd
 if [ ${PREINITED} -eq 0 ]; then
     # Patch libunwind
-	  patch -p1 < ${TOPDIR}/patch/libunwind/*
+	  patch -p1 < ${BUILD_PREFIX}/patch/libunwind/*
     # Patch libstd
-    patch -p1 < ${TOPDIR}/patch/libstd/0001-disable-compiler-builtins.patch
-    patch -p1 < ${TOPDIR}/patch/libstd/0002-remove-compiler-builtin-extern.patch
+    patch -p1 < ${BUILD_PREFIX}/patch/libstd/0001-disable-compiler-builtins.patch
+    patch -p1 < ${BUILD_PREFIX}/patch/libstd/0002-remove-compiler-builtin-extern.patch
 fi
 
 echo "step 7.3 Build libbacktrace"
@@ -241,6 +245,29 @@ echo "step 8.1 Building libstd"
 pushd ${BUILD_PREFIX}/rust-git/src/libstd
 run_with_proper_env "${CARGO} clean"
 run_with_proper_env "${CARGO} build -j${THREADS} --target=${TARGET} --release --features ${FEATURES}"
+
+echo "step 9 Installing"
+TARGET_LIB_DIR=${RUST_LIB}/${TARGET}/lib
+echo "step 9.1 Installing libs to ${TARGET_LIB_DIR}"
+rm -rf ${TARGET_LIB_DIR}
+mkdir -p ${TARGET_LIB_DIR}
+cp ${BUILD_PREFIX}/rust-git/src/target/${TARGET}/release/deps/* ${TARGET_LIB_DIR}
+
+echo "step 9.2 Installing target config"
+cp "${BUILD_PREFIX}/cfg/${TARGET}.json" ${INSTALL_PATH}
+
+echo "step 9.3 Installing convenience cargo wrapper"
+cat > ${INSTALL_PATH}/cargo-${TARGET} <<EOF
+#!/bin/bash
+HERE=${INSTALL_PATH}
+APPENDIX=
+if [ "\$1" == "build" ]; then
+  APPENDIX=--target=${TARGET}
+fi
+TOOLCHAIN_PATH=${TOOLCHAIN_PATH}
+CARGO_HOME=${CARGO_HOME} PATH=\${HERE}/rust/bin:\$PATH LD_LIBRARY_PATH=\${HERE}/rust/lib RUST_TARGET_PATH=\${HERE} HOST=${HOST} TARGET=${TARGET} LD=\${TOOLCHAIN_PATH}/bin/arm-linux-ld CC=\${TOOLCHAIN_PATH}/bin/arm-linux-gcc AR=\${TOOLCHAIN_PATH}/bin/arm-linux-ar ${CARGO} \$* \${APPENDIX}
+EOF
+chmod +x ${INSTALL_PATH}/cargo-${TARGET}
 
 
 # echo "step 7 Build std libs"
