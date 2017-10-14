@@ -1,3 +1,36 @@
+# build-cross-rust
+
+Cross-compile the Rust standard library for armv5
+
+Example build for musl libc:
+
+```
+$ git clone https://github.com/snegovick/rust-cross-libs.git
+$ cd rust-cross-libs
+$ bash ./build-cross-rust.sh  --install-prefix=../ --libc=musl
+```
+
+# Test
+
+Build artefacts are stored in ../rust-armv5te-rcross-linux-musleabi.
+
+In order to test cross-cargo we will use hyper and its examples:
+
+```
+$ git clone https://github.com/hyperium/hyper.git
+$ cd hyper
+$ <somewhere>/rust-armv5te-rcross-linux-musleabi/cargo-armv5te-rcross-linux-musleabi build --release
+$ <somewhere>/rust-armv5te-rcross-linux-musleabi/cargo-armv5te-rcross-linux-musleabi build --example server --release
+$ <somewhere>/rust-armv5te-rcross-linux-musleabi/cargo-armv5te-rcross-linux-musleabi build --example hello --release
+$ <somewhere>/rust-armv5te-rcross-linux-musleabi/cargo-armv5te-rcross-linux-musleabi build --example client --release
+```
+
+# Issues
+
+  * uclibc is not currently supported by rust. Not sure if it ever will be. Workaround: use musl, carry musl libc with project if needed
+  * debug build is  not linking properly because it relies on *__mulodi4*, which is implemented in currently disabled compiler-builtins rust library. Workaround: build with --release
+
+  
 # rust-cross-libs
 
 Cross-compile the Rust standard library for custom targets without a full
