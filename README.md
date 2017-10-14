@@ -25,6 +25,8 @@ $ <somewhere>/rust-armv5te-rcross-linux-musleabi/cargo-armv5te-rcross-linux-musl
 $ <somewhere>/rust-armv5te-rcross-linux-musleabi/cargo-armv5te-rcross-linux-musleabi build --example client --release
 ```
 
+The binaries can be then moved from *target/armv5te-rcross-linux-musleabi/release/examples/* to appropriate host and tested there. Dont forget to move musl libc too if needed.
+
 # Issues
 
   * uclibc is not currently supported by rust. Not sure if it ever will be. Workaround: use musl, carry musl libc with project if needed
